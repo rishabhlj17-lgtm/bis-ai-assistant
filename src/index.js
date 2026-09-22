@@ -1,3 +1,4 @@
+import { BIS_KNOWLEDGE } from "./knowledge.js";
 export default {
   async fetch(request) {
     const url = new URL(request.url);
