@@ -1,0 +1,8 @@
+{
+  "project_name": "BIS AI Assistant",
+  "environment": "development",
+  "deployment": "online",
+  "knowledge_source": "official_bis_sources",
+  "local_knowledge_base": true,
+  "allow_external_ai_api": false
+}
