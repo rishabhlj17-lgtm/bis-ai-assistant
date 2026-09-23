@@ -149,7 +149,7 @@ function htmlPage(mode = "home") {
   const activeAssistant = assistantMode ? "active" : "";
 
   const mainContent = assistantMode
-    ? String.raw\`
+    ? String.raw`
       <div class="breadcrumb">Home / AI Assistant</div>
       <div class="assistant-layout">
         <aside class="sidebar">
@@ -185,8 +185,8 @@ function htmlPage(mode = "home") {
           </div>
         </section>
       </div>
-    \`
-    : String.raw\`
+    `
+    : String.raw`
       <div class="breadcrumb">Home</div>
       <div class="hero">
         <section class="hero-main">
@@ -222,9 +222,9 @@ function htmlPage(mode = "home") {
         <a class="service" href="https://www.bis.gov.in/product-certification/product-certification-faq/?lang=en" target="_blank" rel="noopener"><strong>FAQs</strong><span>Frequently asked questions about product certification.</span></a>
         <a class="service" href="https://standards.bis.gov.in/" target="_blank" rel="noopener"><strong>Standards Portal</strong><span>Search standards and related technical information.</span></a>
       </div>
-    \`;
+    `;
 
-  return \`<!doctype html>
+  return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -290,18 +290,18 @@ textarea:focus{outline:none;border-color:#0b4d86;box-shadow:0 0 0 2px rgba(11,77
     <div class="ebis">eBIS<small>Electronic BIS Services</small></div>
   </div>
   <nav class="nav"><div class="nav-inner">
-    <a href="/" class="\${activeHome}">Home</a>
+    <a href="/" class="${activeHome}">Home</a>
     <a href="https://www.bis.gov.in/the-bureau/?lang=en" target="_blank" rel="noopener">The Bureau</a>
     <a href="https://www.bis.gov.in/standards/?lang=en" target="_blank" rel="noopener">Standards</a>
     <a href="https://www.bis.gov.in/product-certification/?lang=en" target="_blank" rel="noopener">Product Certification</a>
     <a href="https://www.bis.gov.in/system-certification-overview/?lang=en" target="_blank" rel="noopener">System Certification</a>
     <a href="https://www.bis.gov.in/training-services/?lang=en" target="_blank" rel="noopener">Training</a>
     <a href="https://www.bis.gov.in/consumer-affairs/?lang=en" target="_blank" rel="noopener">Consumer Affairs</a>
-    <a href="/assistant" class="\${activeAssistant}">AI Assistant</a>
+    <a href="/assistant" class="${activeAssistant}">AI Assistant</a>
   </div></nav>
 </header>
 <div class="notice">Independent BIS AI Assistant prototype — styled to follow the structure of the BIS public website. Verify important compliance information on current official BIS sources.</div>
-<main id="main" class="container">\${mainContent}</main>
+<main id="main" class="container">${mainContent}</main>
 <footer class="footer">
   <div class="footer-inner">
     <div><h4>Bureau of Indian Standards</h4><p>Manak Bhawan, 9 Bahadur Shah Zafar Marg, New Delhi - 110002, India</p><p>This is an independent project interface styled after the BIS public website.</p></div>
@@ -374,7 +374,7 @@ async function ask(){
 }
 </script>
 </body>
-</html>\`;
+</html>`;
 }
 
 export default {
