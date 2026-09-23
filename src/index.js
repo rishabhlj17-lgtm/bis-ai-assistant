@@ -1,5 +1,14 @@
 import { BIS_KNOWLEDGE } from "./knowledge.js";
 
+function isProjectSource(source) {
+  return source.title.toLowerCase().startsWith("bis ai assistant:");
+}
+
+function isOfficialBISSource(source) {
+  return /^https:\/\/(www\.)?bis\.gov\.in\//i.test(source.url) ||
+    /^https:\/\/standards\.bis\.gov\.in\//i.test(source.url);
+}
+
 function retrieveKnowledge(question) {
   const normalized = question
     .toLowerCase()
@@ -12,8 +21,27 @@ function retrieveKnowledge(question) {
     "would","will","does","do","did","is","are","was","were","be","been",
     "being","the","a","an","and","or","for","from","to","of","in","on",
     "at","with","about","into","my","me","i","we","you","your","our",
-    "please","tell","give","want","need","get","have","has"
+    "please","tell","give","want","need","get","have","has","exactly",
+    "also","every","each","complete","today","current","latest"
   ]);
+
+  const topicRules = [
+    { terms: ["tmt", "tmt bar", "tmt bars", "rebar", "reinforcement steel", "reinforcing bar", "hsds", "is 1786", "is1786", "fe 500d", "fe 550d"], boost: 60 },
+    { terms: ["packaged drinking water", "drinking water", "is 14543"], boost: 60 },
+    { terms: ["pressure cooker", "is 2347"], boost: 60 },
+    { terms: ["hallmark", "hallmarking", "huid"], boost: 55 },
+    { terms: ["scheme x", "scheme-x", "eeqco"], boost: 55 },
+    { terms: ["scheme ii", "scheme-ii", "crs", "registration scheme"], boost: 55 },
+    { terms: ["fmcs", "foreign manufacturers certification scheme"], boost: 55 },
+    { terms: ["qco", "quality control order", "quality control orders"], boost: 35 },
+    { terms: ["bis licence", "bis license", "licence", "license"], boost: 25 },
+    { terms: ["testing laboratory", "laboratory", "lab", "test equipment", "calibration", "sit", "scheme of inspection and testing"], boost: 25 },
+    { terms: ["indian standard", "standard number", "know your standard", "standards portal"], boost: 20 }
+  ];
+
+  const activeTopics = topicRules.filter(rule =>
+    rule.terms.some(term => normalized.includes(term))
+  );
 
   const words = normalized
     .split(" ")
@@ -23,30 +51,76 @@ function retrieveKnowledge(question) {
     const title = item.title.toLowerCase();
     const keywordText = item.keywords.join(" ").toLowerCase();
     const content = item.content.toLowerCase();
-    const text = title + " " + keywordText + " " + content;
 
     let score = 0;
+    let matchedTopic = false;
 
     for (const word of words) {
-      if (title.includes(word)) score += 8;
-      if (keywordText.includes(word)) score += 5;
+      if (title.includes(word)) score += 10;
+      if (keywordText.includes(word)) score += 6;
       else if (content.includes(word)) score += 2;
     }
 
     for (const keyword of item.keywords) {
       const phrase = keyword.toLowerCase().trim();
       if (phrase.length > 3 && normalized.includes(phrase)) {
-        score += phrase.includes(" ") ? 10 : 7;
+        score += phrase.includes(" ") ? 18 : 10;
       }
     }
 
-    return { ...item, score };
+    for (const rule of activeTopics) {
+      for (const term of rule.terms) {
+        if (!normalized.includes(term)) continue;
+
+        const itemHasTerm =
+          title.includes(term) ||
+          keywordText.includes(term) ||
+          content.includes(term);
+
+        if (itemHasTerm) {
+          score += rule.boost;
+          matchedTopic = true;
+        }
+      }
+    }
+
+    if (activeTopics.length > 0) {
+      if (
+        isProjectSource(item) &&
+        !normalized.includes("project") &&
+        !normalized.includes("architecture") &&
+        !normalized.includes("gemini") &&
+        !normalized.includes("cloudflare")
+      ) {
+        score -= 35;
+      }
+
+      if (isOfficialBISSource(item) && matchedTopic) {
+        score += 12;
+      }
+    }
+
+    return {
+      ...item,
+      score,
+      matchedTopic,
+      official: isOfficialBISSource(item),
+      projectSource: isProjectSource(item)
+    };
   });
 
-  return scored
+  const relevant = scored
     .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
+    .sort((a, b) => b.score - a.score);
+
+  if (activeTopics.length > 0) {
+    const topicMatches = relevant.filter(item => item.matchedTopic);
+    if (topicMatches.length >= 2) {
+      return topicMatches.slice(0, 5);
+    }
+  }
+
+  return relevant.slice(0, 5);
 }
 
 function buildGeminiPrompt(question, sources) {
