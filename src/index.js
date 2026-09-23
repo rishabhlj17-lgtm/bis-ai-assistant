@@ -1,25 +1,43 @@
 import { BIS_KNOWLEDGE } from "./knowledge.js";
 
 function retrieveKnowledge(question) {
-  const words = question
+  const normalized = question
     .toLowerCase()
-    .replace(/[^a-z0-9\- ]/g, " ")
-    .split(/\s+/)
-    .filter(word => word.length > 2);
+    .replace(/[^a-z0-9\\- ]/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+  const stopWords = new Set([
+    "what","which","when","where","why","who","how","can","could","should",
+    "would","will","does","do","did","is","are","was","were","be","been",
+    "being","the","a","an","and","or","for","from","to","of","in","on",
+    "at","with","about","into","my","me","i","we","you","your","our",
+    "please","tell","give","want","need","get","have","has"
+  ]);
+
+  const words = normalized
+    .split(" ")
+    .filter(word => word.length > 2 && !stopWords.has(word));
 
   const scored = BIS_KNOWLEDGE.map(item => {
-    const text = (
-      item.title +
-      " " +
-      item.keywords.join(" ") +
-      " " +
-      item.content
-    ).toLowerCase();
+    const title = item.title.toLowerCase();
+    const keywordText = item.keywords.join(" ").toLowerCase();
+    const content = item.content.toLowerCase();
+    const text = title + " " + keywordText + " " + content;
 
     let score = 0;
 
     for (const word of words) {
-      if (text.includes(word)) score++;
+      if (title.includes(word)) score += 8;
+      if (keywordText.includes(word)) score += 5;
+      else if (content.includes(word)) score += 2;
+    }
+
+    for (const keyword of item.keywords) {
+      const phrase = keyword.toLowerCase().trim();
+      if (phrase.length > 3 && normalized.includes(phrase)) {
+        score += phrase.includes(" ") ? 10 : 7;
+      }
     }
 
     return { ...item, score };
