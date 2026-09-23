@@ -1,5 +1,38 @@
 export const BIS_KNOWLEDGE = [
   {
+    title: "BIS Requirements for TMT Bars / Reinforcement Steel",
+    url: "https://www.bis.gov.in/product-certification/product-specific-information-2/?lang=en",
+    keywords: [
+      "TMT",
+      "TMT bars",
+      "thermo mechanically treated",
+      "thermo mechanical treatment",
+      "rebar",
+      "reinforcement steel",
+      "reinforcing bar",
+      "steel bars",
+      "IS 1786",
+      "Fe 415",
+      "Fe 500",
+      "Fe 550",
+      "Fe 600",
+      "manufacturing",
+      "production",
+      "testing",
+      "bend test",
+      "re-bend test",
+      "tensile",
+      "elongation",
+      "carbon equivalent",
+      "scheme of testing and inspection",
+      "STI"
+    ],
+    content:
+      "For TMT/reinforcement bars, the relevant BIS product standard is IS 1786:2008, High Strength Deformed Steel Bars and Wires for Concrete Reinforcement. BIS states that the standard applies to hot-rolled steel with controlled cooling and tempering as well as other permitted production forms, and that the production process is at the manufacturer's discretion. The BIS product manual also identifies product-specific requirements such as chemical tests, physical/mechanical tests, bend and re-bend tests, test equipment, a Scheme of Inspection and Testing, grouping guidelines, and scope of licence. Exact requirements depend on the applicable grade, size, product scope and current BIS documents."
+  },
+
+
+  {
     title: "BIS Product Certification Overview",
     url: "https://www.bis.gov.in/product-certification/product-certification-overview/?lang=en",
     keywords: [
