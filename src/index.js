@@ -257,7 +257,7 @@ function htmlPage(mode) {
       '<div><h4>Verification</h4><p>Verify current standards, notices and regulatory requirements using official BIS sources.</p></div>' +
     '</div><div class="disclaimer">BIS AI Assistant — independent prototype, not an official BIS service.</div></footer>' +
     '<script>' +
-      'function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("\"","&quot;").replaceAll("\'","&#39;");}' +
+      'function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll(String.fromCharCode(34),"&quot;").replaceAll("\'","&#39;");}' +
       'function renderMarkdown(markdown){' +
         'let html=escapeHtml(markdown||"");' +
         'html=html.replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g,"<a href=\\"$2\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">$1</a>");' +
