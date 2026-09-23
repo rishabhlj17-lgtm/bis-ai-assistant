@@ -269,7 +269,7 @@ export const BIS_KNOWLEDGE = [
     keywords: ["BIS contact", "enquiry", "technical department", "product certification contact", "Indian Standards contact", "hallmarking contact", "laboratory contact"],
     content:
       "BIS maintains enquiry channels for Indian Standards, Product Certification, Compulsory Registration Scheme, Hallmarking, Management Systems, laboratories, complaints and other activities. When the AI knowledge base cannot establish a product-specific requirement, the official BIS enquiry/technical-department contact information is the appropriate escalation path."
-  }
+  },
 
   {
     title: "BIS AI Assistant: Official Status",
