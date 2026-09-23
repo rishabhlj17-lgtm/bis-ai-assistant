@@ -216,6 +216,14 @@ export const BIS_KNOWLEDGE = [
   },
 
   {
+    title: "TMT / Reinforcement Steel: Current BIS Scheme and QCO Position",
+    url: "https://www.bis.gov.in/product-certification/products-under-compulsory-certification/scheme-i-mark-scheme/?lang=en",
+    keywords: ["TMT", "TMT bars", "IS 1786", "1786", "steel", "steel products", "quality control order", "QCO", "Steel and Steel Products (Quality Control) Order", "Steel & Steel Products (Quality Control) Order", "Scheme I", "ISI Mark Scheme", "mandatory"],
+    content:
+      "BIS's current Scheme-I (ISI Mark Scheme) page lists IS 1786:2008, High Strength Deformed Steel Bars and Wires for Concrete Reinforcement, under the Steel and Iron Products section. The same BIS listing associates this product with the Steel and Steel Products (Quality Control) Order, 2024, including S.O. 574(E) dated 5 February 2024 and S.O. 3716(E) dated 29 August 2024, and lists the Steel & Steel Products (Quality Control) Amendment Order, 2025, S.O. 5134(E) dated 20 November 2025. For a current compliance decision, the applicable product entry and latest QCO/amendment/enforcement position must be checked on the current BIS page."
+  },
+
+  {
     title: "TMT / Reinforcement Steel: IS 1786",
     url: "https://www.bis.gov.in/product-certification/product-specific-information-2/?lang=en",
     keywords: ["TMT", "TMT bar", "TMT bars", "rebar", "reinforcement steel", "reinforcing bar", "high strength deformed steel", "HSDS", "IS 1786", "IS1786", "Fe 415", "Fe 500", "Fe 550", "Fe 600", "production of TMT", "steel bar production"],
