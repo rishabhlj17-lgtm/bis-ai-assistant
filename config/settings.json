@@ -1,8 +1,11 @@
 {
   "project_name": "BIS AI Assistant",
-  "environment": "development",
-  "deployment": "online",
-  "knowledge_source": "official_bis_sources",
+  "environment": "production",
+  "deployment": "Cloudflare Workers",
+  "knowledge_source": "curated_official_bis_sources",
   "local_knowledge_base": true,
-  "allow_external_ai_api": false
+  "ai_provider": "Google Gemini API",
+  "model": "gemini-3.5-flash-lite",
+  "allow_external_ai_api": true,
+  "source_policy": "Use supplied official BIS context for BIS factual claims"
 }
