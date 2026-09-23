@@ -21,43 +21,47 @@ function retrieveKnowledge(question) {
     "would","will","does","do","did","is","are","was","were","be","been",
     "being","the","a","an","and","or","for","from","to","of","in","on",
     "at","with","about","into","my","me","i","we","you","your","our",
-    "please","tell","give","want","need","get","have","has","exactly",
-    "also","every","each","complete","today","current","latest"
+    "please","tell","give","want","need","get","have","has","exactly"
   ]);
-
-  const topicRules = [
-    { terms: ["tmt", "tmt bar", "tmt bars", "rebar", "reinforcement steel", "reinforcing bar", "hsds", "is 1786", "is1786", "fe 500d", "fe 550d"], boost: 60 },
-    { terms: ["packaged drinking water", "drinking water", "is 14543"], boost: 60 },
-    { terms: ["pressure cooker", "is 2347"], boost: 60 },
-    { terms: ["hallmark", "hallmarking", "huid"], boost: 55 },
-    { terms: ["scheme x", "scheme-x", "eeqco"], boost: 55 },
-    { terms: ["scheme ii", "scheme-ii", "crs", "registration scheme"], boost: 55 },
-    { terms: ["fmcs", "foreign manufacturers certification scheme"], boost: 55 },
-    { terms: ["qco", "quality control order", "quality control orders"], boost: 35 },
-    { terms: ["bis licence", "bis license", "licence", "license"], boost: 25 },
-    { terms: ["testing laboratory", "laboratory", "lab", "test equipment", "calibration", "sit", "scheme of inspection and testing"], boost: 25 },
-    { terms: ["indian standard", "standard number", "know your standard", "standards portal"], boost: 20 }
-  ];
-
-  const activeTopics = topicRules.filter(rule =>
-    rule.terms.some(term => normalized.includes(term))
-  );
 
   const words = normalized
     .split(" ")
     .filter(word => word.length > 2 && !stopWords.has(word));
 
+  const projectQuery = /\b(cloudflare|worker|workers|gemini|rag|retrieval|architecture|api key|security|serverless|quota|rate limit|rpm|tpm|rpd|deployment|frontend|backend|model)\b/.test(normalized);
+
+  const topicSignals = [
+    { terms: ["tmt", "tmt bar", "tmt bars", "rebar", "reinforcement steel", "is 1786", "is1786", "fe 500d", "fe 550d"], boost: 70 },
+    { terms: ["scheme x", "scheme-x", "eeqco"], boost: 65 },
+    { terms: ["hallmark", "huid", "gold jewellery", "silver jewellery"], boost: 55 },
+    { terms: ["packaged drinking water", "is 14543"], boost: 65 },
+    { terms: ["pressure cooker", "is 2347"], boost: 65 },
+    { terms: ["crs", "scheme ii", "electronics", "information technology goods"], boost: 55 },
+    { terms: ["fmcs", "foreign manufacturer"], boost: 55 },
+    { terms: ["bis licence", "bis license", "apply for licence", "apply for license", "product certification"], boost: 40 },
+    { terms: ["qco", "quality control order", "compulsory certification"], boost: 40 },
+    { terms: ["indian standard", "standard number", "know your standard", "standards portal"], boost: 35 }
+  ];
+
+  const activeTopics = topicSignals.filter(topic =>
+    topic.terms.some(term => normalized.includes(term))
+  );
+
   const scored = BIS_KNOWLEDGE.map(item => {
     const title = item.title.toLowerCase();
     const keywordText = item.keywords.join(" ").toLowerCase();
     const content = item.content.toLowerCase();
+    const itemText = title + " " + keywordText + " " + content;
+    const isProjectKnowledge = title.startsWith("bis ai assistant:");
 
     let score = 0;
-    let matchedTopic = false;
 
     for (const word of words) {
-      if (title.includes(word)) score += 10;
-      if (keywordText.includes(word)) score += 6;
+      if (title.split(/\s+/).includes(word)) score += 12;
+      else if (title.includes(word)) score += 8;
+
+      if (keywordText.split(/[, ]+/).includes(word)) score += 8;
+      else if (keywordText.includes(word)) score += 5;
       else if (content.includes(word)) score += 2;
     }
 
@@ -68,59 +72,29 @@ function retrieveKnowledge(question) {
       }
     }
 
-    for (const rule of activeTopics) {
-      for (const term of rule.terms) {
-        if (!normalized.includes(term)) continue;
-
-        const itemHasTerm =
-          title.includes(term) ||
-          keywordText.includes(term) ||
-          content.includes(term);
-
-        if (itemHasTerm) {
-          score += rule.boost;
-          matchedTopic = true;
+    for (const topic of activeTopics) {
+      for (const term of topic.terms) {
+        if (normalized.includes(term) && itemText.includes(term)) {
+          score += topic.boost;
+          break;
         }
       }
     }
 
-    if (activeTopics.length > 0) {
-      if (
-        isProjectSource(item) &&
-        !normalized.includes("project") &&
-        !normalized.includes("architecture") &&
-        !normalized.includes("gemini") &&
-        !normalized.includes("cloudflare")
-      ) {
-        score -= 35;
-      }
+    if (isProjectKnowledge && !projectQuery) score -= 80;
+    if (!isProjectKnowledge && projectQuery) score += 3;
 
-      if (isOfficialBISSource(item) && matchedTopic) {
-        score += 12;
-      }
-    }
-
-    return {
-      ...item,
-      score,
-      matchedTopic,
-      official: isOfficialBISSource(item),
-      projectSource: isProjectSource(item)
-    };
+    return { ...item, score };
   });
 
-  const relevant = scored
+  const topicMatched = activeTopics.length > 0
+    ? scored.filter(item => item.score >= 12)
+    : scored;
+
+  return (topicMatched.length ? topicMatched : scored)
     .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  if (activeTopics.length > 0) {
-    const topicMatches = relevant.filter(item => item.matchedTopic);
-    if (topicMatches.length >= 2) {
-      return topicMatches.slice(0, 5);
-    }
-  }
-
-  return relevant.slice(0, 5);
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
 }
 
 function buildGeminiPrompt(question, sources) {
