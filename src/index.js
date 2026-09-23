@@ -271,7 +271,13 @@ textarea{width:100%;min-height:150px;border:1px solid #aeb9c5;padding:14px;font-
 textarea:focus{outline:none;border-color:#0b4d86;box-shadow:0 0 0 2px rgba(11,77,134,.12)}
 .ask{margin-top:12px;background:#0b4d86;border:0;color:#fff;padding:12px 20px;font-weight:700;cursor:pointer}.ask:hover{background:#083a66}.ask:disabled{opacity:.65;cursor:not-allowed}
 .examples{margin:15px 0;color:#687481;font-size:12px}.example{display:inline-block;margin:5px 5px 0 0;padding:7px 9px;background:#edf3f8;border:1px solid #d4e0ea;color:#24577f;cursor:pointer}
-.answer{margin-top:20px;background:#f8fafc;border:1px solid #dce3ea;padding:16px;min-height:90px;line-height:1.65;white-space:pre-wrap}
+.answer{margin-top:20px;background:#f8fafc;border:1px solid #dce3ea;padding:16px;min-height:90px;line-height:1.65}
+.answer a{color:#0b4d86;text-decoration:underline;font-weight:600}
+.answer strong{color:#172f4a}
+.md-step{margin:7px 0 0 4px}
+.md-number{font-weight:700;color:#0b4d86}
+.md-bullet{margin:6px 0 0 8px}
+.md-gap{height:8px}
 .sources{margin-top:18px}.sources h3{color:#0b4d86;font-size:16px;margin:0 0 8px}.source{padding:10px 12px;border:1px solid #dde3e8;margin-top:8px;background:#fff}
 .source a{color:#0b4d86;font-weight:700;text-decoration:none}.source a:hover{text-decoration:underline}
 .status{margin-top:10px;font-size:12px;color:#6a7480}
@@ -315,6 +321,32 @@ function useExample(text){
   document.getElementById("question").value = text;
 }
 
+function escapeHtml(value){
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+function renderMarkdown(markdown){
+  let html = escapeHtml(markdown || "");
+
+  html = html.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  html = html.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  html = html.replace(/^\s*(\d+)\.\s+(.+)$/gm,'<div class="md-step"><span class="md-number">$1.</span> $2</div>');
+  html = html.replace(/^\s*[-•]\s+(.+)$/gm,'<div class="md-bullet">• $1</div>');
+  html = html.replace(/\n{2,}/g,'<div class="md-gap"></div>');
+  html = html.replace(/\n/g,"<br>");
+
+  return html;
+}
+
 async function ask(){
   const question = document.getElementById("question").value.trim();
   const answer = document.getElementById("answer");
@@ -330,7 +362,7 @@ async function ask(){
 
   button.disabled = true;
   answer.textContent = "Searching verified BIS information and preparing your answer...";
-  status.textContent = "Connecting to the AI service...";
+  status.textContent = "Connecting to the AI service.";
   sources.innerHTML = "";
 
   try{
@@ -346,7 +378,7 @@ async function ask(){
       throw new Error(data.answer || ("Request failed with HTTP " + response.status));
     }
 
-    answer.textContent = data.answer || "No answer available.";
+    answer.innerHTML = renderMarkdown(data.answer || "No answer available.");
     status.textContent = "Answer generated from the available verified BIS knowledge.";
 
     if(data.sources && data.sources.length){
