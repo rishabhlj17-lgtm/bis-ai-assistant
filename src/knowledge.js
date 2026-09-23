@@ -262,4 +262,85 @@ export const BIS_KNOWLEDGE = [
     content:
       "BIS maintains enquiry channels for Indian Standards, Product Certification, Compulsory Registration Scheme, Hallmarking, Management Systems, laboratories, complaints and other activities. When the AI knowledge base cannot establish a product-specific requirement, the official BIS enquiry/technical-department contact information is the appropriate escalation path."
   }
+
+  {
+    title: "BIS AI Assistant: Official Status",
+    url: "https://www.bis.gov.in/",
+    keywords: ["official BIS assistant", "official AI", "BIS AI", "BIS chatbot", "government chatbot", "official product", "endorsement", "who operates this"],
+    content:
+      "This project is an independent AI assistant interface that uses curated information from official BIS sources. It must not claim to be operated, endorsed or authorized by BIS. Official BIS websites and documents remain the authoritative source for current standards, notifications and regulatory requirements."
+  },
+
+  {
+    title: "BIS AI Assistant: Handling Ambiguous Questions",
+    url: "https://www.bis.gov.in/know-your-standard/?lang=en",
+    keywords: ["confusing question", "ambiguous question", "unclear question", "which standard", "applicable standard", "product type", "grade", "size", "scope", "clarification"],
+    content:
+      "When a BIS question is ambiguous, the assistant should identify the missing detail instead of guessing. For product compliance questions, useful clarifying details can include the exact product, intended use, material, grade or model, size/capacity, manufacturing location, whether the product is domestic or imported, and any known Indian Standard, QCO or certification scheme."
+  },
+
+  {
+    title: "BIS AI Assistant: When Sources Are Not Enough",
+    url: "https://www.bis.gov.in/",
+    keywords: ["not enough information", "source gap", "unknown requirement", "unsupported claim", "missing BIS information", "cannot answer", "uncertain"],
+    content:
+      "If the curated BIS sources do not establish a specific requirement, the assistant should not invent or extrapolate it. It should answer the supported parts of the question, identify the exact missing detail, and direct the user to the relevant current official BIS standard, product manual, QCO, notification or BIS enquiry channel."
+  },
+
+  {
+    title: "BIS AI Assistant: Source-Grounded Retrieval",
+    url: "https://www.bis.gov.in/know-your-standard/?lang=en",
+    keywords: ["RAG", "retrieval augmented generation", "retrieval", "grounded AI", "source aware", "evidence", "official sources"],
+    content:
+      "The project uses a BIS-focused retrieval layer before response generation. Relevant curated BIS entries are selected from the local knowledge base and their official URLs and context are supplied to the AI. The response rules instruct the model to use that supplied BIS context for factual BIS claims and not to fabricate requirements."
+  },
+
+  {
+    title: "BIS AI Assistant: Currentness and Updates",
+    url: "https://standards.bis.gov.in/",
+    keywords: ["current", "latest", "updated", "revision", "amendment", "notification", "current standard", "freshness", "knowledge update"],
+    content:
+      "BIS standards, product manuals, QCOs and other requirements can be revised or updated. The assistant's curated knowledge must therefore be refreshed as official BIS material changes. For questions asking for the latest or current position, the answer should prioritize the current official BIS source and identify the relevant document or notification."
+  },
+
+  {
+    title: "BIS AI Assistant: Compliance Scope",
+    url: "https://www.bis.gov.in/product-certification/product-certification-process/?lang=en",
+    keywords: ["legal advice", "compliance decision", "regulatory decision", "guarantee", "guaranteed", "certificate", "licence", "compliance"],
+    content:
+      "The assistant provides information and guidance based on retrieved BIS material. It should not present itself as the authority that grants a licence, certification or regulatory approval. Where the outcome depends on a product-specific assessment, current notification, conformity-assessment scheme or official decision by BIS, the assistant should explain the supported requirements and identify the controlling official source."
+  },
+
+  {
+    title: "BIS AI Assistant: Security Architecture",
+    url: "https://developers.cloudflare.com/workers/configuration/secrets/",
+    keywords: ["API key", "security", "secret", "Cloudflare secret", "server side", "frontend key", "exposed key", "credential"],
+    content:
+      "The project sends AI requests through the Cloudflare Worker. The Gemini API key is stored as a Cloudflare Worker secret rather than being placed in browser-facing source code. Cloudflare documents Worker secrets as encrypted values intended for sensitive information such as API keys and authentication tokens."
+  },
+
+  {
+    title: "BIS AI Assistant: Web Architecture",
+    url: "https://developers.cloudflare.com/workers/static-assets/",
+    keywords: ["Cloudflare Worker", "serverless", "frontend", "web interface", "architecture", "deployment", "browser", "static assets"],
+    content:
+      "The project uses a Cloudflare Worker as its server-side application layer and serves the web interface from the Worker. Cloudflare Workers can combine web assets and Worker logic, allowing a browser-facing interface and API routes to be deployed together."
+  },
+
+  {
+    title: "BIS AI Assistant: Gemini Model",
+    url: "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+    keywords: ["Gemini", "Gemini 3.5 Flash-Lite", "gemini-3.5-flash-lite", "AI model", "Google AI", "low latency", "cost effective"],
+    content:
+      "The project is configured to use Google's Gemini 3.5 Flash-Lite model for response generation. Google documents the stable model ID as gemini-3.5-flash-lite and describes the model as optimized for low-latency and cost-effective execution."
+  },
+
+  {
+    title: "BIS AI Assistant: Rate Limits",
+    url: "https://ai.google.dev/gemini-api/docs/rate-limits",
+    keywords: ["RPM", "TPM", "RPD", "rate limit", "quota", "requests per minute", "tokens per minute", "requests per day"],
+    content:
+      "Gemini API rate limits can be measured using requests per minute (RPM), tokens per minute (TPM) and requests per day (RPD), depending on the project, account tier and model. Google says active rate limits can be viewed in Google AI Studio and that RPD quotas reset at midnight Pacific time."
+  },
+
 ];
