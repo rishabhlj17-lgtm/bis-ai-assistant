@@ -64,7 +64,23 @@ ${question}
 VERIFIED BIS SOURCES:
 ${context || "No sufficiently relevant verified source was found."}
 
-Return a clear answer suitable for a normal business user.
+Return a clear, useful answer suitable for a normal business user.
+
+RESPONSE QUALITY:
+- Do not open with a generic statement such as "the available BIS knowledge does not contain enough information" when one or more supplied sources are relevant.
+- First use the supplied sources to give the strongest answer those sources support.
+- For compliance/process questions, organize the answer as:
+  1. Direct answer
+  2. Applicable Indian Standard / scheme / QCO, when supported
+  3. Key requirements or tests, when supported
+  4. Important conditions or scope limitations
+  5. Official BIS source links
+- Clearly distinguish between mandatory requirements and general guidance when the supplied source supports that distinction.
+- Never turn a source gap into a guessed requirement.
+- If a specific detail is not supported, say exactly which detail is not established by the supplied sources, while still answering the rest of the question.
+- Do not repeatedly tell the user to "verify" instead of answering. Give the supported answer first and show the official source beside it.
+- Do not add a repetitive "I am an independent AI assistant" sentence to every generated answer; the website already displays the independent-project notice.
+
 `;
 }
 
