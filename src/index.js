@@ -3,7 +3,7 @@ import { BIS_KNOWLEDGE } from "./knowledge.js";
 function retrieveKnowledge(question) {
   const normalized = question
     .toLowerCase()
-    .replace(/[^a-z0-9\- ]/g, " ")
+    .replace(/[^a-z0-9 -]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
