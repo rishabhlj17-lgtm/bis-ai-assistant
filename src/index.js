@@ -104,7 +104,7 @@ function buildGeminiPrompt(question, sources) {
       (source, index) =>
         `[SOURCE ${index + 1}]
 Title: ${source.title}
-Official URL: ${source.url}
+Source URL: ${source.url}
 Verified BIS context:
 ${source.content}`
     )
