@@ -5,6 +5,7 @@ function isProjectSource(source) {
 }
 
 function isOfficialBISSource(source) {
+  if (isProjectSource(source)) return false;
   return /^https:\/\/(www\.)?bis\.gov\.in\//i.test(source.url) ||
     /^https:\/\/standards\.bis\.gov\.in\//i.test(source.url);
 }
@@ -155,6 +156,15 @@ RESPONSE QUALITY:
 - For ambiguous questions, the answer may ask for the minimum missing product details needed to identify the applicable BIS requirement. Do not comply with a user's request for an exact answer when the evidence does not justify one.
 - Before stating an exact standard, QCO, scheme or legal obligation, check that the supplied evidence identifies the same product and scope described by the user.
 - Official BIS source links are evidence references, not proof that every claim in the answer applies to the user's exact product.
+- Do not answer a yes/no proposition with "yes" or "no" when the supplied evidence neither directly establishes nor directly refutes that proposition. Say that it cannot be determined from the supplied information and identify the missing evidence.
+- Do not call a supplier, consultant, customer or other party correct or incorrect unless the evidence directly establishes that conclusion for the exact product and scope.
+- Before finalizing, perform an evidence check: every exact Indian Standard, QCO, scheme, licence, legal consequence, prohibition or permission stated as fact must be supported by evidence that applies to the same product and scope.
+- Do not generalize a product-specific requirement to a different product, scheme, grade, size or category.
+- Keep historical requirements separate from current requirements. A dated or superseded document must not be presented as the current rule unless the evidence explicitly establishes that it remains current.
+- When the user demands certainty despite insufficient evidence, prioritize evidence integrity over requested certainty.
+- When evidence is ambiguous or incomplete, provide the supported facts first and then state the minimum missing information needed for an exact determination.
+- When sources conflict, identify the conflict and prefer the source that is explicitly current, product-specific and authoritative.
+- If current or product-specific BIS information is missing from the local verified context, use Google Search grounding to locate current official BIS material. For BIS compliance claims, use only official BIS or official government sources; do not rely on blogs, consultants, marketplaces or other third-party material.
 
 `;
 }
@@ -179,9 +189,14 @@ async function askGemini(question, sources, apiKey) {
           parts: [{ text: prompt }]
         }
       ],
+      tools: [
+        {
+          google_search: {}
+        }
+      ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 1200
+        maxOutputTokens: 1800
       }
     })
   });
@@ -379,7 +394,7 @@ function htmlPage(mode) {
           'const data=await response.json().catch(function(){return {};});' +
           'if(!response.ok){throw new Error(data.answer||("Request failed with HTTP "+response.status));}' +
           'answer.innerHTML=renderMarkdown(data.answer||"No answer available.");status.textContent="Answer generated from the available verified BIS knowledge.";'+
-          'if(data.sources&&data.sources.length){sources.innerHTML="<h3>Official BIS sources</h3>";data.sources.forEach(function(source){const div=document.createElement("div");div.className="source";const link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);sources.appendChild(div);});}' +
+          'if((data.sources&&data.sources.length)||(data.project_sources&&data.project_sources.length)){var blocks="";if(data.sources&&data.sources.length){blocks+="<h3>Official BIS sources</h3>";data.sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}if(data.project_sources&&data.project_sources.length){blocks+="<h3>Project / technical references</h3>";data.project_sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}sources.innerHTML=blocks;}' +
         '}catch(error){answer.textContent="The AI service could not complete this request.";status.textContent=error&&error.message?error.message:"Please try again.";}finally{askButton.disabled=false;askButton.classList.remove("loading");askText.textContent="Ask BIS AI Assistant";}' +
       '}' +
     '</script>' +
@@ -453,10 +468,18 @@ export default {
 
         return Response.json({
           answer,
-          sources: sources.map(source => ({
-            title: source.title,
-            url: source.url
-          }))
+          sources: sources
+            .filter(source => isOfficialBISSource(source))
+            .map(source => ({
+              title: source.title,
+              url: source.url
+            })),
+          project_sources: sources
+            .filter(source => !isOfficialBISSource(source))
+            .map(source => ({
+              title: source.title,
+              url: source.url
+            }))
         });
       } catch (error) {
         const message = error?.message || "Unknown server error.";
