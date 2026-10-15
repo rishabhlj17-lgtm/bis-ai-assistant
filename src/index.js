@@ -82,7 +82,7 @@ function retrieveKnowledge(question) {
       }
     }
 
-    const applicationIntent = /\\b(apply|application|obtain|grant of licence|grant of license|new licence|new license|licensing process|renew|renewal)\\b/.test(normalized);
+    const applicationIntent = /\b(apply|application|obtain|grant of licence|grant of license|new licence|new license|licensing process|renew|renewal)\b/.test(normalized);
     const isApplicationGuide =
       title.includes("step-by-step starting point") ||
       title.includes("how to apply") ||
@@ -110,7 +110,7 @@ function retrieveKnowledge(question) {
 }
 
 function buildGeminiPrompt(question, sources) {
-  const applicationQuestion = /\\b(apply|application|obtain|grant of licen[cs]e|new licen[cs]e|licensing process)\\b/i.test(question);
+  const applicationQuestion = /\b(apply|application|obtain|grant of licen[cs]e|new licen[cs]e|licensing process)\b/i.test(question);
   const applicationInstructions = applicationQuestion
     ? `
 APPLICATION-QUESTION FORMAT:
