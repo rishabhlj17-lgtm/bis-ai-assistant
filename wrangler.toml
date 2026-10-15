@@ -2,7 +2,7 @@ name = "bis-ai-assistant"
 main = "src/resilient.js"
 compatibility_date = "2026-09-22"
 keep_vars = true
-# Security hardening: preserve dashboard variables such as the public Turnstile site key.
+# Security hardening: keep dashboard site-key variables and deploy Turnstile verification changes.
 
 # Public anonymous AI endpoint: per-client burst and sustained limits.
 # Rate-limit counters are enforced per Cloudflare location, not globally.
