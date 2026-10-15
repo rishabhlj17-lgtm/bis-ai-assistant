@@ -82,17 +82,6 @@ function retrieveKnowledge(question) {
       }
     }
 
-    const applicationIntent = /\b(apply|application|obtain|grant of licence|grant of license|new licence|new license|licensing process|renew|renewal)\b/.test(normalized);
-    const isApplicationGuide =
-      title.includes("step-by-step starting point") ||
-      title.includes("how to apply") ||
-      keywordText.includes("application steps") ||
-      keywordText.includes("how to apply");
-
-    if (applicationIntent && isApplicationGuide) score += 90;
-    if (applicationIntent && title.includes("general overview")) score -= 12;
-    if (applicationIntent && /fees|fee page/.test(title) && !/fee|fees|cost/.test(normalized)) score -= 8;
-
     if (isProjectKnowledge && !projectQuery) score -= 80;
     if (!isProjectKnowledge && projectQuery) score += 3;
 
@@ -110,19 +99,6 @@ function retrieveKnowledge(question) {
 }
 
 function buildGeminiPrompt(question, sources) {
-  const applicationQuestion = /\b(apply|application|obtain|grant of licen[cs]e|new licen[cs]e|licensing process)\b/i.test(question);
-  const applicationInstructions = applicationQuestion
-    ? `
-APPLICATION-QUESTION FORMAT:
-- The user is asking how to apply for or obtain a BIS licence. Do not answer with only a general description of certification.
-- Lead with a one-sentence direct answer, then give a numbered, practical sequence.
-- Explain: identify the exact product and current Indian Standard; check whether a QCO/compulsory scheme applies; check the applicable product manual and Scheme of Inspection and Testing; prepare the manufacturing, process-control, quality-control and testing capability needed for the exact product; use the official Manakonline portal for the online application and payments; follow the applicable product-specific assessment/testing steps and respond to BIS queries.
-- Mention only supporting documents, forms, fees, timelines or tests that are evidenced by the supplied context. Do not fabricate a universal checklist or exact cost.
-- Include the official application portal and the most relevant official BIS source links.
-- If the product is not specified, state that exact standard, scheme, documents and fees depend on the product, but still provide the general verified application route.
-`
-    : "";
-
   const context = sources
     .map(
       (source, index) =>
@@ -154,8 +130,6 @@ ${question}
 
 VERIFIED BIS SOURCES:
 ${context || "No sufficiently relevant verified source was found."}
-
-${applicationInstructions}
 
 Return a clear, useful answer suitable for a normal business user.
 
