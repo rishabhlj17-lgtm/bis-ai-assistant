@@ -143,38 +143,157 @@ function safeLogDetail(detail) {
     .slice(0, 600);
 }
 
+
+function withSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  headers.set("X-DNS-Prefetch-Control", "off");
+  headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+  );
+  if (new URL(response.url || "https://invalid.local").pathname.startsWith("/api/")) {
+    headers.set("Cache-Control", "no-store");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function jsonError(message, status, extraHeaders = {}) {
+  return Response.json(
+    { answer: message },
+    {
+      status,
+      headers: {
+        "cache-control": "no-store",
+        ...extraHeaders
+      }
+    }
+  );
+}
+
+async function readJsonLimited(request, maximumBytes) {
+  if (!request.body) throw new Error("EMPTY_BODY");
+  const reader = request.clone().body.getReader();
+  const chunks = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const result = await reader.read();
+      if (result.done) break;
+      total += result.value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new Error("BODY_TOO_LARGE");
+      }
+      chunks.push(result.value);
+    }
+  } finally {
+    try { reader.releaseLock(); } catch (_) {}
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch (_) {
+    throw new Error("INVALID_JSON");
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method !== "POST" || url.pathname !== "/api/ask") {
-      return worker.fetch(request, env, ctx);
+      try {
+        return withSecurityHeaders(await worker.fetch(request, env, ctx));
+      } catch (error) {
+        console.error("[BIS AI] Request failed: " + safeLogDetail(error?.message || "Unknown error"));
+        return withSecurityHeaders(new Response("Internal server error", {
+          status: 500,
+          headers: { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" }
+        }));
+      }
     }
 
-    let body = {};
+    const origin = request.headers.get("Origin");
+    if (origin && origin !== url.origin) {
+      return withSecurityHeaders(jsonError("Cross-origin requests are not allowed.", 403));
+    }
+
+    const clientIp = (request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 100);
+
+    // Fail closed: a missing rate-limit binding must not leave the billable AI endpoint open.
+    if (!env.API_LIMITER || typeof env.API_LIMITER.limit !== "function") {
+      console.error("[BIS AI] API_LIMITER binding is missing; request blocked.");
+      return withSecurityHeaders(jsonError("The assistant is temporarily unavailable because its security limiter is not configured.", 503));
+    }
+
     try {
-      body = await request.clone().json();
-    } catch (_) {
-      return worker.fetch(request, env, ctx);
+      const limit = await env.API_LIMITER.limit({ key: clientIp });
+      if (!limit.success) {
+        return withSecurityHeaders(jsonError(
+          "Too many questions were submitted from this network. Please wait a minute before trying again.",
+          429,
+          { "Retry-After": "60" }
+        ));
+      }
+    } catch (error) {
+      console.error("[BIS AI] Rate limiter failed; request blocked.");
+      return withSecurityHeaders(jsonError("The assistant is temporarily unavailable because a security check failed.", 503));
     }
 
-    const question = String(body.question || "").trim();
-    if (!question || question.length > 4000) {
-      return worker.fetch(request, env, ctx);
+    const contentType = request.headers.get("Content-Type") || "";
+    if (!/^application\/json(?:\s*;|\s*$)/i.test(contentType)) {
+      return withSecurityHeaders(jsonError("Please submit the question as JSON.", 415));
     }
 
-    let response = null;
+    const length = Number(request.headers.get("Content-Length") || 0);
+    if (Number.isFinite(length) && length > 16384) {
+      return withSecurityHeaders(jsonError("The request is too large. Please shorten your question.", 413));
+    }
+
+    let body;
+    try {
+      body = await readJsonLimited(request, 16384);
+    } catch (error) {
+      if (error?.message === "BODY_TOO_LARGE") {
+        return withSecurityHeaders(jsonError("The request is too large. Please shorten your question.", 413));
+      }
+      return withSecurityHeaders(jsonError("The request body must be valid JSON.", 400));
+    }
+
+    const question = typeof body?.question === "string" ? body.question.trim() : "";
+    if (!question) {
+      return withSecurityHeaders(jsonError("Please enter a question first.", 400));
+    }
+    if (question.length > 4000) {
+      return withSecurityHeaders(jsonError("Please keep your question below 4000 characters.", 400));
+    }
+
     let failureDetail = "";
-
     try {
-      response = await worker.fetch(request, env, ctx);
-      if (response.status < 500) return response;
+      const response = await worker.fetch(request, env, ctx);
+      if (response.status < 500) return withSecurityHeaders(response);
 
       let payload = {};
-      try {
-        payload = await response.json();
-      } catch (_) {}
-
+      try { payload = await response.json(); } catch (_) {}
       failureDetail = String(payload.technical_error || payload.answer || "");
     } catch (error) {
       failureDetail = error && error.message ? error.message : "Worker request failed.";
@@ -186,7 +305,7 @@ export default {
     const diagnosticCode = /GEMINI_API_KEY.*missing|API key.*missing/i.test(safeDetail)
       ? "MISSING_API_KEY"
       : (codeMatch ? codeMatch[1] : "PROVIDER_ERROR");
-    console.error("[BIS AI] AI request failed; returning retrieval fallback. " + safeDetail);
+    console.error("[BIS AI] AI request failed; retrieval fallback. " + safeDetail);
 
     const sources = findRelevantSources(question);
     const officialSources = sources
@@ -202,15 +321,29 @@ export default {
         return { title: source.title, url: source.url };
       });
 
-    return Response.json(
+    // Do not expose raw upstream diagnostics to public callers.
+    const publicDiagnostic = diagnosticCode === "429"
+      ? "The AI provider is rate-limiting requests or the project's quota may be exhausted."
+      : diagnosticCode === "401" || diagnosticCode === "403"
+        ? "The AI provider rejected authentication or access."
+        : diagnosticCode === "404"
+          ? "The AI provider did not recognize the configured model or endpoint."
+          : diagnosticCode === "400"
+            ? "The AI provider rejected the request parameters."
+            : diagnosticCode === "MISSING_API_KEY"
+              ? "The server-side AI credential is not configured."
+              : diagnosticCode === "PROVIDER_ERROR"
+                ? "The AI provider request failed."
+                : "The AI provider returned a server error.";
+
+    return withSecurityHeaders(Response.json(
       {
-        answer: buildFallbackAnswer(question, sources, diagnostic),
+        answer: buildFallbackAnswer(question, sources, publicDiagnostic),
         sources: officialSources,
         project_sources: projectSources,
         fallback: true,
-        diagnostic: diagnostic,
-        diagnostic_code: diagnosticCode,
-        diagnostic_details: safeDetail
+        diagnostic: publicDiagnostic,
+        diagnostic_code: diagnosticCode
       },
       {
         status: 200,
@@ -219,6 +352,6 @@ export default {
           "x-bis-ai-fallback": "1"
         }
       }
-    );
+    ));
   }
 };
