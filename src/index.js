@@ -189,14 +189,9 @@ async function askGemini(question, sources, apiKey) {
           parts: [{ text: prompt }]
         }
       ],
-      tools: [
-        {
-          google_search: {}
-        }
-      ],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 1800
+        maxOutputTokens: 1200
       }
     })
   });
