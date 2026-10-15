@@ -1,3 +1,4 @@
 name = "bis-ai-assistant"
 main = "src/resilient.js"
 compatibility_date = "2026-09-22"
+# Rebuild after Gemini API diagnostics and auth-header fix.
