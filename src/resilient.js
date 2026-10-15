@@ -156,7 +156,7 @@ function withSecurityHeaders(response) {
   headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
   );
   if (new URL(response.url || "https://invalid.local").pathname.startsWith("/api/")) {
     headers.set("Cache-Control", "no-store");
@@ -297,6 +297,52 @@ export default {
     }
     if (question.length > 4000) {
       return withSecurityHeaders(jsonError("Please keep your question below 4000 characters.", 400));
+    }
+
+    const hasTurnstileSiteKey = Boolean(env.TURNSTILE_SITE_KEY);
+    const hasTurnstileSecret = Boolean(env.TURNSTILE_SECRET_KEY);
+    if (hasTurnstileSiteKey !== hasTurnstileSecret) {
+      console.error("[BIS AI] Turnstile is partially configured; request blocked.");
+      return withSecurityHeaders(jsonError("The security check is not fully configured. Please try again later.", 503));
+    }
+
+    if (hasTurnstileSecret && hasTurnstileSiteKey) {
+      const token = typeof body.turnstile_token === "string" ? body.turnstile_token.trim() : "";
+      if (!token || token.length > 2048) {
+        return withSecurityHeaders(jsonError("Complete the security check before submitting your question.", 403));
+      }
+
+      let verification;
+      try {
+        const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            secret: env.TURNSTILE_SECRET_KEY,
+            response: token,
+            remoteip: clientIp === "unknown" ? undefined : clientIp
+          }),
+          signal: AbortSignal.timeout(5000)
+        });
+
+        if (!verifyResponse.ok) {
+          console.error("[BIS AI] Turnstile verification service returned a non-success status.");
+          return withSecurityHeaders(jsonError("The security check is temporarily unavailable. Please try again shortly.", 503));
+        }
+
+        verification = await verifyResponse.json();
+      } catch (_) {
+        console.error("[BIS AI] Turnstile verification request failed.");
+        return withSecurityHeaders(jsonError("The security check is temporarily unavailable. Please try again shortly.", 503));
+      }
+
+      if (
+        !verification?.success ||
+        verification.hostname !== url.hostname ||
+        verification.action !== "bis_ai_ask"
+      ) {
+        return withSecurityHeaders(jsonError("Security verification failed. Refresh the page and complete the check again.", 403));
+      }
     }
 
     let failureDetail = "";
