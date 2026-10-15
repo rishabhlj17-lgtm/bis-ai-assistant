@@ -1,7 +1,7 @@
 name = "bis-ai-assistant"
 main = "src/resilient.js"
 compatibility_date = "2026-09-22"
-# Rebuild after Gemini API diagnostics and auth-header fix.
+# Security hardening: build the rate-limited Worker with current request validation and headers.
 
 # Public anonymous AI endpoint: per-client burst and sustained limits.
 # Rate-limit counters are enforced per Cloudflare location, not globally.
