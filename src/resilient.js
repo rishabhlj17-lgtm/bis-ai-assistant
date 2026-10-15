@@ -357,12 +357,7 @@ export default {
       failureDetail = error && error.message ? error.message : "Worker request failed.";
     }
 
-    const diagnostic = summarizeFailure(failureDetail);
     const safeDetail = safeLogDetail(failureDetail);
-    const codeMatch = safeDetail.match(/(?:Gemini API error\s*\(|HTTP\s+)(\d{3})/i);
-    const diagnosticCode = /GEMINI_API_KEY.*missing|API key.*missing/i.test(safeDetail)
-      ? "MISSING_API_KEY"
-      : (codeMatch ? codeMatch[1] : "PROVIDER_ERROR");
     console.error("[BIS AI] AI request failed; retrieval fallback. " + safeDetail);
 
     const sources = findRelevantSources(question);
