@@ -182,7 +182,7 @@ export default {
 
     const diagnostic = summarizeFailure(failureDetail);
     const safeDetail = safeLogDetail(failureDetail);
-    const codeMatch = safeDetail.match(/(?:Gemini API error\\s*\\(|HTTP\\s+)(\\d{3})/i);
+    const codeMatch = safeDetail.match(/(?:Gemini API error\s*\(|HTTP\s+)(\d{3})/i);
     const diagnosticCode = /GEMINI_API_KEY.*missing|API key.*missing/i.test(safeDetail)
       ? "MISSING_API_KEY"
       : (codeMatch ? codeMatch[1] : "PROVIDER_ERROR");
