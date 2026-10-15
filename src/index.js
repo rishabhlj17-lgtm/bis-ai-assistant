@@ -174,13 +174,13 @@ async function askGemini(question, sources, apiKey) {
   const prompt = buildGeminiPrompt(question, sources);
 
   const endpoint =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" +
-    encodeURIComponent(apiKey);
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey
     },
     body: JSON.stringify({
       contents: [
@@ -393,7 +393,7 @@ function htmlPage(mode) {
           'const response=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:text})});' +
           'const data=await response.json().catch(function(){return {};});' +
           'if(!response.ok){throw new Error(data.answer||("Request failed with HTTP "+response.status));}' +
-          'answer.innerHTML=renderMarkdown(data.answer||"No answer available.");status.textContent="Answer generated from the available verified BIS knowledge.";'+
+          'answer.innerHTML=renderMarkdown(data.answer||"No answer available.");if(data.fallback){status.textContent="The Gemini request failed ("+(data.diagnostic_code||"unknown error")+"). "+(data.diagnostic_details||data.diagnostic||"Check the Worker logs.")+" A retrieval-only answer is shown below."; }else{status.textContent="Answer generated from the available verified BIS knowledge."; }'+
           'if((data.sources&&data.sources.length)||(data.project_sources&&data.project_sources.length)){var blocks="";if(data.sources&&data.sources.length){blocks+="<h3>Official BIS sources</h3>";data.sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}if(data.project_sources&&data.project_sources.length){blocks+="<h3>Project / technical references</h3>";data.project_sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}sources.innerHTML=blocks;}' +
         '}catch(error){answer.textContent="The AI service could not complete this request.";status.textContent=error&&error.message?error.message:"Please try again.";}finally{askButton.disabled=false;askButton.classList.remove("loading");askText.textContent="Ask BIS AI Assistant";}' +
       '}' +
