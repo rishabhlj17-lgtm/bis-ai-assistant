@@ -228,7 +228,7 @@ async function askGemini(question, sources, apiKey) {
   return answer;
 }
 
-function htmlPage(mode) {
+function htmlPage(mode, turnstileSiteKey = "") {
   const assistantMode = mode === "assistant";
   const activeHome = assistantMode ? "" : "active";
   const activeAssistant = assistantMode ? "active" : "";
@@ -253,6 +253,7 @@ function htmlPage(mode) {
           '<div class="assistant-body">' +
             '<label class="question-label" for="question">Ask your BIS question</label>' +
             '<textarea id="question" placeholder="Example: How can I find the Indian Standard applicable to my product?"></textarea>' +
+            (turnstileSiteKey ? '<div class="turnstile-row"><div id="turnstile-container"></div></div>' : '') +
             '<button id="askButton" class="ask" type="button"><span id="askText">Ask BIS AI Assistant</span><span id="spinner" class="spinner" aria-hidden="true"></span></button>' +
             '<div class="examples">' +
               '<div class="examples-title">Suggested searches</div>' +
@@ -328,7 +329,7 @@ function htmlPage(mode) {
       '.examples{margin:18px 0 0;color:#687481;font-size:12px}.examples-title{font-weight:700;color:#425466;margin-bottom:4px}.example{display:inline-block;margin:5px 5px 0 0;padding:7px 9px;background:#edf3f8;border:1px solid #d4e0ea;color:#24577f;cursor:pointer}.example:hover{background:#dfeaf3}' +
       '.answer{margin-top:20px;background:#f8fafc;border:1px solid #dce3ea;padding:16px;min-height:90px;line-height:1.65}.answer a{color:#0b4d86;text-decoration:underline;font-weight:600}.answer strong{color:#172f4a}.md-step{margin:7px 0 0 4px}.md-number{font-weight:700;color:#0b4d86}.md-bullet{margin:6px 0 0 8px}.md-gap{height:8px}' +
       '.sources{margin-top:18px}.sources h3{color:#0b4d86;font-size:16px;margin:0 0 8px}.source{padding:10px 12px;border:1px solid #dde3e8;margin-top:8px;background:#fff}.source a{color:#0b4d86;font-weight:700;text-decoration:none}.source a:hover{text-decoration:underline}' +
-      '.status{margin-top:10px;font-size:12px;color:#6a7480;line-height:1.45}.note{margin-top:18px;font-size:12px;color:#6a7480;line-height:1.5}' +
+      '.status{margin-top:10px;font-size:12px;color:#6a7480;line-height:1.45}.turnstile-row{margin:12px 0;min-height:0}.note{margin-top:18px;font-size:12px;color:#6a7480;line-height:1.5}' +
       '.footer{background:#123f6d;color:#fff;margin-top:30px}.footer-inner{max-width:1240px;margin:auto;padding:28px 18px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:24px}.footer h4{margin:0 0 9px;font-size:14px}.footer p,.footer a{font-size:12px;line-height:1.55;color:#e3ebf3}.footer a{text-decoration:none;display:block}.disclaimer{background:#0c2f50;color:#dce8f3;padding:9px 18px;text-align:center;font-size:11px}' +
       '@media(max-width:900px){.hero,.assistant-layout{grid-template-columns:1fr}.services{grid-template-columns:repeat(2,1fr)}.footer-inner{grid-template-columns:1fr}}' +
       '@media(max-width:560px){.header-inner{align-items:flex-start}.ebis{display:none}.services{grid-template-columns:1fr}.nav a{padding:10px 11px}.hero-main{padding:24px}.hero-main h1{font-size:28px}}' +
@@ -357,7 +358,11 @@ function htmlPage(mode) {
       '<div><h4>Quick Links</h4><a href="https://www.bis.gov.in/" target="_blank" rel="noopener">Official BIS Website</a><a href="https://standards.bis.gov.in/" target="_blank" rel="noopener">Standards Portal</a><a href="/assistant">BIS AI Assistant</a></div>' +
       '<div><h4>Verification</h4><p>Verify current standards, notices and regulatory requirements using official BIS sources.</p></div>' +
     '</div><div class="disclaimer">BIS AI Assistant — independent prototype, not an official BIS service.</div></footer>' +
+    (turnstileSiteKey ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit" defer></script>' : '') +
     '<script>' +
+      'const turnstileSiteKey=' + JSON.stringify(turnstileSiteKey || '') + ';' +
+      'let turnstileToken="";let turnstileWidgetId=null;' +
+      'function onTurnstileLoad(){if(!turnstileSiteKey||!window.turnstile)return;turnstileWidgetId=window.turnstile.render("#turnstile-container",{sitekey:turnstileSiteKey,action:"bis_ai_ask",callback:function(token){turnstileToken=token;status.textContent="Security check complete.";}, "expired-callback":function(){turnstileToken="";status.textContent="Security check expired. Please complete it again.";},"error-callback":function(){turnstileToken="";status.textContent="Security check failed. Refresh the page and try again."}});}' +
       'function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll(String.fromCharCode(34),"&quot;").replaceAll("\'","&#39;");}' +
       'function renderMarkdown(markdown){' +
         'let html=escapeHtml(markdown||"");' +
@@ -383,14 +388,15 @@ function htmlPage(mode) {
       'async function ask(){' +
         'const text=question.value.trim();' +
         'if(!text){answer.textContent="Please enter a BIS question first.";status.textContent="";question.focus();return;}' +
+        'if(turnstileSiteKey&&!turnstileToken){status.textContent="Complete the security check before submitting.";return;}' +
         'askButton.disabled=true;askButton.classList.add("loading");askText.textContent="Searching BIS information...";answer.textContent="Searching verified BIS information and preparing your answer...";status.textContent="Connecting to the AI service...";sources.innerHTML="";' +
         'try{' +
-          'const response=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:text})});' +
+          'const response=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:text,turnstile_token:turnstileToken})});' +
           'const data=await response.json().catch(function(){return {};});' +
           'if(!response.ok){throw new Error(data.answer||("Request failed with HTTP "+response.status));}' +
           'answer.innerHTML=renderMarkdown(data.answer||"No answer available.");if(data.fallback){status.textContent="The AI service is temporarily unavailable. Relevant BIS references are shown instead; please try again shortly."; }else{status.textContent="Answer generated from the available verified BIS knowledge."; }'+
           'if((data.sources&&data.sources.length)||(data.project_sources&&data.project_sources.length)){var blocks="";if(data.sources&&data.sources.length){blocks+="<h3>Official BIS sources</h3>";data.sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}if(data.project_sources&&data.project_sources.length){blocks+="<h3>Project / technical references</h3>";data.project_sources.forEach(function(source){var div=document.createElement("div");div.className="source";var link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent=source.title;div.appendChild(link);blocks+=div.outerHTML;});}sources.innerHTML=blocks;}' +
-        '}catch(error){answer.textContent="The AI service could not complete this request.";status.textContent=error&&error.message?error.message:"Please try again.";}finally{askButton.disabled=false;askButton.classList.remove("loading");askText.textContent="Ask BIS AI Assistant";}' +
+        '}catch(error){answer.textContent="The AI service could not complete this request.";status.textContent=error&&error.message?error.message:"Please try again.";}finally{askButton.disabled=false;askButton.classList.remove("loading");askText.textContent="Ask BIS AI Assistant";if(turnstileSiteKey&&window.turnstile&&turnstileWidgetId!==null){turnstileToken="";window.turnstile.reset(turnstileWidgetId);}}' +
       '}' +
     '</script>' +
   '</body>' +
@@ -406,7 +412,7 @@ export default {
       (url.pathname === "/" || url.pathname === "/assistant")
     ) {
       return new Response(
-        htmlPage(url.pathname === "/assistant" ? "assistant" : "home"),
+        htmlPage(url.pathname === "/assistant" ? "assistant" : "home", env.TURNSTILE_SITE_KEY || ""),
         {
           headers: {
             "content-type": "text/html; charset=UTF-8",
