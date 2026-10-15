@@ -240,12 +240,24 @@ export default {
     const clientIp = (request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 100);
 
     // Fail closed: a missing rate-limit binding must not leave the billable AI endpoint open.
-    if (!env.API_LIMITER || typeof env.API_LIMITER.limit !== "function") {
-      console.error("[BIS AI] API_LIMITER binding is missing; request blocked.");
+    if (
+      !env.API_LIMITER || typeof env.API_LIMITER.limit !== "function" ||
+      !env.API_BURST_LIMITER || typeof env.API_BURST_LIMITER.limit !== "function"
+    ) {
+      console.error("[BIS AI] One or more rate-limit bindings are missing; request blocked.");
       return withSecurityHeaders(jsonError("The assistant is temporarily unavailable because its security limiter is not configured.", 503));
     }
 
     try {
+      const burst = await env.API_BURST_LIMITER.limit({ key: clientIp });
+      if (!burst.success) {
+        return withSecurityHeaders(jsonError(
+          "You are sending questions too quickly. Please wait a few seconds and try again.",
+          429,
+          { "Retry-After": "10" }
+        ));
+      }
+
       const limit = await env.API_LIMITER.limit({ key: clientIp });
       if (!limit.success) {
         return withSecurityHeaders(jsonError(
@@ -322,28 +334,14 @@ export default {
       });
 
     // Do not expose raw upstream diagnostics to public callers.
-    const publicDiagnostic = diagnosticCode === "429"
-      ? "The AI provider is rate-limiting requests or the project's quota may be exhausted."
-      : diagnosticCode === "401" || diagnosticCode === "403"
-        ? "The AI provider rejected authentication or access."
-        : diagnosticCode === "404"
-          ? "The AI provider did not recognize the configured model or endpoint."
-          : diagnosticCode === "400"
-            ? "The AI provider rejected the request parameters."
-            : diagnosticCode === "MISSING_API_KEY"
-              ? "The server-side AI credential is not configured."
-              : diagnosticCode === "PROVIDER_ERROR"
-                ? "The AI provider request failed."
-                : "The AI provider returned a server error.";
+    const publicDiagnostic = "The AI response is temporarily unavailable. Showing relevant material from the curated BIS knowledge base instead.";
 
     return withSecurityHeaders(Response.json(
       {
         answer: buildFallbackAnswer(question, sources, publicDiagnostic),
         sources: officialSources,
         project_sources: projectSources,
-        fallback: true,
-        diagnostic: publicDiagnostic,
-        diagnostic_code: diagnosticCode
+        fallback: true
       },
       {
         status: 200,
