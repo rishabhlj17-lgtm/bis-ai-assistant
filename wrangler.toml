@@ -2,3 +2,20 @@ name = "bis-ai-assistant"
 main = "src/resilient.js"
 compatibility_date = "2026-09-22"
 # Rebuild after Gemini API diagnostics and auth-header fix.
+
+# Public anonymous AI endpoint: per-client burst and sustained limits.
+# Rate-limit counters are enforced per Cloudflare location, not globally.
+[[ratelimits]]
+name = "API_LIMITER"
+namespace_id = "261017026"
+[ratelimits.simple]
+limit = 10
+period = 60
+
+[[ratelimits]]
+name = "API_BURST_LIMITER"
+namespace_id = "261017027"
+[ratelimits.simple]
+limit = 3
+period = 10
+
