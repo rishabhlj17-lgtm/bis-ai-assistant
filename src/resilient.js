@@ -181,7 +181,12 @@ export default {
     }
 
     const diagnostic = summarizeFailure(failureDetail);
-    console.error("[BIS AI] AI request failed; returning retrieval fallback. " + safeLogDetail(failureDetail));
+    const safeDetail = safeLogDetail(failureDetail);
+    const codeMatch = safeDetail.match(/(?:Gemini API error\\s*\\(|HTTP\\s+)(\\d{3})/i);
+    const diagnosticCode = /GEMINI_API_KEY.*missing|API key.*missing/i.test(safeDetail)
+      ? "MISSING_API_KEY"
+      : (codeMatch ? codeMatch[1] : "PROVIDER_ERROR");
+    console.error("[BIS AI] AI request failed; returning retrieval fallback. " + safeDetail);
 
     const sources = findRelevantSources(question);
     const officialSources = sources
@@ -202,7 +207,10 @@ export default {
         answer: buildFallbackAnswer(question, sources, diagnostic),
         sources: officialSources,
         project_sources: projectSources,
-        fallback: true
+        fallback: true,
+        diagnostic: diagnostic,
+        diagnostic_code: diagnosticCode,
+        diagnostic_details: safeDetail
       },
       {
         status: 200,
