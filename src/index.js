@@ -417,11 +417,10 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/api/health") {
-      return Response.json({
-        ok: true,
-        ai_configured: Boolean(env.GEMINI_API_KEY),
-        knowledge_sources: BIS_KNOWLEDGE.length
-      });
+      return Response.json(
+        { ok: true },
+        { headers: { "cache-control": "no-store" } }
+      );
     }
 
     if (request.method === "POST" && url.pathname === "/api/ask") {
