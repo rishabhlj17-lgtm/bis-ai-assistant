@@ -153,6 +153,8 @@ function withSecurityHeaders(response) {
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set("Cross-Origin-Resource-Policy", "same-origin");
   headers.set("X-DNS-Prefetch-Control", "off");
+  // Prevent browsers and intermediary caches from retaining HTML, API answers, or error payloads.
+  headers.set("Cache-Control", "no-store");
   headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   headers.set(
     "Content-Security-Policy",
