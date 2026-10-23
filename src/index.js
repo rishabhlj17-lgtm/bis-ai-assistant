@@ -499,4 +499,4 @@ export default {
   }
 };
 
-// Build trigger: redeploy the current Turnstile-enabled assistant source.
+// Deployment trigger: rebuild the current Turnstile-enabled assistant from main.
