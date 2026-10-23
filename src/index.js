@@ -498,3 +498,5 @@ export default {
     return new Response("Not found", { status: 404 });
   }
 };
+
+// Build trigger: redeploy the current Turnstile-enabled assistant source.
