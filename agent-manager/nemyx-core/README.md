@@ -21,9 +21,16 @@ From the repository folder:
 
 ```powershell
 cd agent-manager\nemyx-core
+py -3 -m pip install -e .
 py -3 -m nemyx_core.cli init
 py -3 -m nemyx_core.cli project-add --name "BIS AI Assistant" --description "Existing BIS assistant project"
 py -3 -m nemyx_core.cli project-list
+```
+
+To run the tests:
+
+```powershell
+py -3 -m unittest discover -s tests
 ```
 
 To create a task, copy the project ID printed by `project-list`:
