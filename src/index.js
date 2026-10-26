@@ -1,3 +1,4 @@
+// Git-connected deployment trigger: publish the latest Turnstile verification gate from main.
 import { BIS_KNOWLEDGE } from "./knowledge.js";
 
 function isProjectSource(source) {
