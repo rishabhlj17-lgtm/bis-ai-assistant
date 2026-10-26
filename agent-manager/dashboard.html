@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Agent Manager</title>
+<style>
+:root{color-scheme:light;--ink:#172b4d;--muted:#66758a;--line:#dce4ee;--bg:#f3f6fa;--blue:#2259a8;--panel:#fff;--green:#18794e;--amber:#9a5b00}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}.shell{max-width:1180px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.mark{background:var(--blue);color:white;border-radius:12px;padding:12px;font-weight:800}.muted{color:var(--muted)}.tag{font-size:12px;padding:5px 9px;border-radius:999px;background:#e7edf6;color:#344966}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:17px;min-width:0}.metric{font-size:28px;font-weight:750;margin-top:7px}.layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr);gap:16px}.sectionhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}h1,h2,h3,p{margin-top:0}h1{font-size:24px;margin-bottom:2px}h2{font-size:17px;margin-bottom:0}h3{font-size:15px;margin-bottom:4px}.agent{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}.agent:last-child{border:0}.avatar{width:38px;height:38px;border-radius:11px;background:#e8effa;display:grid;place-items:center;font-weight:800;color:var(--blue);flex-shrink:0}.status{font-size:12px;font-weight:700}.ready{color:var(--green)}.pending{color:var(--amber)}.task{padding:13px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.tasktop{display:flex;justify-content:space-between;gap:8px}.task p{font-size:13px;color:var(--muted);margin:5px 0 0}.pill{font-size:11px;border-radius:999px;padding:4px 8px;background:#eef2f7;white-space:nowrap}.pill.approval{background:#fff0d5;color:#865100}button,input,select,textarea{font:inherit}button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;background:var(--blue);color:white;font-weight:650}button.secondary{background:#e8edf5;color:var(--ink)}button.danger{background:#fff0f0;color:#a32c2c}.formrow{display:flex;gap:8px;flex-wrap:wrap}.formrow input,.formrow select{flex:1;min-width:130px}input,select,textarea{width:100%;padding:10px;border:1px solid #cbd6e3;border-radius:10px;background:white;color:var(--ink)}label{display:block;font-size:13px;font-weight:650;margin:12px 0 6px}.wide{width:100%}.notice{padding:12px 14px;border-radius:12px;background:#fff7e7;color:#754900;font-size:13px;margin-top:14px}.empty{padding:20px 0;color:var(--muted);font-size:13px}.foot{margin-top:18px;color:var(--muted);font-size:12px}@media(max-width:760px){.shell{padding:14px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}.metric{font-size:24px}}
+</style></head>
+<body><main class="shell">
+<header class="top"><div class="brand"><div class="mark">AM</div><div><h1>AI Agent Manager</h1><div class="muted">One goal. A coordinated team. Controlled autonomy.</div></div></div><span class="tag">PROTOTYPE · LOCAL TO THIS BROWSER</span></header>
+<section class="grid">
+<div class="card"><div class="muted">Active tasks</div><div class="metric" id="activeCount">2</div></div>
+<div class="card"><div class="muted">Available agents</div><div class="metric">5</div></div>
+<div class="card"><div class="muted">Awaiting approval</div><div class="metric" id="approvalCount">1</div></div>
+<div class="card"><div class="muted">Monthly spend</div><div class="metric">₹0*</div></div>
+</section>
+<div class="layout"><section class="card"><div class="sectionhead"><h2>Task queue</h2><button class="secondary" id="clearBtn">Reset demo</button></div>
+<form id="taskForm"><label for="goal">What should the team accomplish?</label><textarea id="goal" rows="3" required placeholder="Example: Research official BIS requirements for a product category and prepare a sourced briefing."></textarea><div class="formrow" style="margin-top:9px"><select id="kind" aria-label="Task type"><option value="Research">Research</option><option value="Software development">Software development</option><option value="Testing and review">Testing and review</option><option value="Business operations">Business operations</option></select><button type="submit">Create task plan</button></div></form>
+<div class="notice">This prototype records a task request; it does not run AI agents yet. Real execution requires the backend and model/runner integrations.</div><div id="tasks"></div></section>
+<aside><section class="card"><div class="sectionhead"><h2>Agent roster</h2><span class="tag">5 roles</span></div>
+<div class="agent"><div class="avatar">M</div><div><h3>Manager</h3><div class="muted">Plans and delegates work</div><span class="status ready">● Ready (demo)</span></div></div>
+<div class="agent"><div class="avatar">R</div><div><h3>Researcher</h3><div class="muted">Sources, facts, market research</div><span class="status ready">● Ready (demo)</span></div></div>
+<div class="agent"><div class="avatar">D</div><div><h3>Developer</h3><div class="muted">Branch-based code changes</div><span class="status pending">● Not connected</span></div></div>
+<div class="agent"><div class="avatar">T</div><div><h3>Tester</h3><div class="muted">Tests and failure diagnostics</div><span class="status pending">● Not connected</span></div></div>
+<div class="agent"><div class="avatar">Q</div><div><h3>Quality reviewer</h3><div class="muted">Independent review and evidence</div><span class="status pending">● Not connected</span></div></div></section>
+<section class="card" style="margin-top:16px"><h2>Approval policy</h2><p class="muted" style="font-size:13px;margin-top:9px">Approval required before production deploys, spending, external messages, account changes, sensitive data access, deletion, or official submissions.</p><span class="pill approval">Human approval required</span></section></aside></div>
+<div class="foot">*₹0 is a target budget, not a guarantee of free execution. This demo stores tasks in this browser only. Do not enter confidential customer or business data.</div>
+</main>
+<script>
+const KEY="agent-manager-demo-tasks-v1";
+const starter=[
+{id:1,title:"Draft architecture for agent orchestration",kind:"Software development",status:"In progress",desc:"Plan the task lifecycle, permissions and integrations."},
+{id:2,title:"Review BIS assistant deployment safeguards",kind:"Testing and review",status:"Awaiting approval",desc:"Review deployment and token validation before production changes."}
+];
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));return Array.isArray(x)?x:starter}catch{return starter}}
+let tasks=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks));render()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){document.getElementById("tasks").innerHTML=tasks.length?tasks.map(t=>'<div class="task"><div class="tasktop"><strong>'+esc(t.title)+'</strong><span class="pill '+(t.status==="Awaiting approval"?"approval":"")+'">'+esc(t.status)+'</span></div><p>'+esc(t.kind)+' · '+esc(t.desc||"Created locally; waiting for a real orchestrator.")+'</p></div>').join(""):'<div class="empty">No tasks yet. Create a goal above.</div>';document.getElementById("activeCount").textContent=tasks.filter(t=>t.status==="In progress"||t.status==="Queued").length;document.getElementById("approvalCount").textContent=tasks.filter(t=>t.status==="Awaiting approval").length}
+document.getElementById("taskForm").addEventListener("submit",e=>{e.preventDefault();const title=document.getElementById("goal").value.trim();if(!title)return;tasks.unshift({id:Date.now(),title,kind:document.getElementById("kind").value,status:"Queued",desc:"Plan requested. No agents are executing in this prototype."});document.getElementById("goal").value="";save()});
+document.getElementById("clearBtn").addEventListener("click",()=>{if(confirm("Reset the local demo tasks?")){tasks=starter;save()}});render();
+</script></body></html>
