@@ -222,6 +222,14 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Safe temporary diagnostic: reveal only whether both Turnstile variables are bound, never their values.
+    if (request.method === "GET" && url.pathname === "/api/turnstile-status") {
+      return withSecurityHeaders(Response.json({
+        siteKeyConfigured: Boolean(env.TURNSTILE_SITE_KEY),
+        secretConfigured: Boolean(env.TURNSTILE_SECRET_KEY)
+      }, { headers: { "cache-control": "no-store" } }));
+    }
+
     if (request.method !== "POST" || url.pathname !== "/api/ask") {
       try {
         return withSecurityHeaders(await worker.fetch(request, env, ctx));
