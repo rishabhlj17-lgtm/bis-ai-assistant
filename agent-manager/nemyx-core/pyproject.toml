@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nemyx-core"
+version = "0.1.0"
+description = "Local-first task and approval foundation for NEMYX"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+nemyx = "nemyx_core.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
