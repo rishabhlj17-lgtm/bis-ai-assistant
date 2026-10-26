@@ -222,7 +222,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Safe temporary diagnostic: reveal only whether both Turnstile variables are bound, never their values.
+    // Safe temporary diagnostic: verify runtime bindings after dashboard key updates; never return key values.
     if (request.method === "GET" && url.pathname === "/api/turnstile-status") {
       return withSecurityHeaders(Response.json({
         siteKeyConfigured: Boolean(env.TURNSTILE_SITE_KEY),
