@@ -144,6 +144,36 @@ function safeLogDetail(detail) {
 }
 
 
+function base64UrlEncode(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+function base64UrlDecode(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+async function sessionSignature(payload, secret) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return base64UrlEncode(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload))));
+}
+async function createSessionToken(hostname, clientIp, secret) {
+  const claims = { v: 1, host: hostname, ip: clientIp, exp: Math.floor(Date.now() / 1000) + 1800 };
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(claims)));
+  return payload + "." + await sessionSignature("bis-ai-session-v1." + payload, secret);
+}
+async function validateSessionToken(token, hostname, clientIp, secret) {
+  if (typeof token !== "string" || token.length > 4096) return false;
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+  if (parts[1] !== await sessionSignature("bis-ai-session-v1." + parts[0], secret)) return false;
+  let claims;
+  try { claims = JSON.parse(new TextDecoder().decode(base64UrlDecode(parts[0]))); } catch (_) { return false; }
+  return claims && claims.v === 1 && claims.host === hostname && claims.ip === clientIp && Number.isInteger(claims.exp) && claims.exp > Math.floor(Date.now() / 1000);
+}
+
 function withSecurityHeaders(response) {
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
@@ -228,6 +258,36 @@ export default {
         siteKeyConfigured: Boolean(env.TURNSTILE_SITE_KEY),
         secretConfigured: Boolean(env.TURNSTILE_SECRET_KEY)
       }, { headers: { "cache-control": "no-store" } }));
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/verify") {
+      const origin = request.headers.get("Origin");
+      if (origin && origin !== url.origin) return withSecurityHeaders(jsonError("Cross-origin requests are not allowed.", 403));
+      const ip = (request.headers.get("CF-Connecting-IP") || "unknown").slice(0, 100);
+      if (!env.API_LIMITER || !env.API_BURST_LIMITER) return withSecurityHeaders(jsonError("Security limiter is not configured.", 503));
+      try {
+        const burst = await env.API_BURST_LIMITER.limit({ key: ip });
+        const sustained = await env.API_LIMITER.limit({ key: ip });
+        if (!burst.success || !sustained.success) return withSecurityHeaders(jsonError("Too many verification attempts. Please wait and try again.", 429));
+      } catch (_) { return withSecurityHeaders(jsonError("Security limiter failed.", 503)); }
+      if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY) return withSecurityHeaders(jsonError("The security check is not configured.", 503));
+      if (!/^application\/json(?:\s*;|\s*$)/i.test(request.headers.get("Content-Type") || "")) return withSecurityHeaders(jsonError("Please submit verification as JSON.", 415));
+      let body;
+      try { body = await readJsonLimited(request, 4096); } catch (_) { return withSecurityHeaders(jsonError("Invalid verification request.", 400)); }
+      const token = typeof body.turnstile_token === "string" ? body.turnstile_token.trim() : "";
+      if (!token || token.length > 2048) return withSecurityHeaders(jsonError("Complete the Cloudflare security check.", 403));
+      try {
+        const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ secret: env.TURNSTILE_SECRET_KEY, response: token, remoteip: ip === "unknown" ? undefined : ip }),
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!response.ok) return withSecurityHeaders(jsonError("Cloudflare verification is temporarily unavailable.", 503));
+        const result = await response.json();
+        if (!result.success || result.hostname !== url.hostname || result.action !== "bis_ai_ask") return withSecurityHeaders(jsonError("Security verification failed. Please try again.", 403));
+        const session_token = await createSessionToken(url.hostname, ip, env.TURNSTILE_SECRET_KEY);
+        return withSecurityHeaders(Response.json({ session_token, expires_in: 1800 }, { headers: { "cache-control": "no-store" } }));
+      } catch (_) { return withSecurityHeaders(jsonError("Cloudflare verification is temporarily unavailable.", 503)); }
     }
 
     if (request.method !== "POST" || url.pathname !== "/api/ask") {
@@ -317,42 +377,10 @@ export default {
     }
 
     if (hasTurnstileSecret && hasTurnstileSiteKey) {
-      const token = typeof body.turnstile_token === "string" ? body.turnstile_token.trim() : "";
-      if (!token || token.length > 2048) {
-        return withSecurityHeaders(jsonError("Complete the security check before submitting your question.", 403));
-      }
-
-      let verification;
-      try {
-        const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            secret: env.TURNSTILE_SECRET_KEY,
-            response: token,
-            remoteip: clientIp === "unknown" ? undefined : clientIp
-          }),
-          signal: AbortSignal.timeout(5000)
-        });
-
-        if (!verifyResponse.ok) {
-          console.error("[BIS AI] Turnstile verification service returned a non-success status.");
-          return withSecurityHeaders(jsonError("The security check is temporarily unavailable. Please try again shortly.", 503));
-        }
-
-        verification = await verifyResponse.json();
-      } catch (_) {
-        console.error("[BIS AI] Turnstile verification request failed.");
-        return withSecurityHeaders(jsonError("The security check is temporarily unavailable. Please try again shortly.", 503));
-      }
-
-      if (
-        !verification?.success ||
-        verification.hostname !== url.hostname ||
-        verification.action !== "bis_ai_ask"
-      ) {
-        return withSecurityHeaders(jsonError("Security verification failed. Refresh the page and complete the check again.", 403));
-      }
+      const token = typeof body.session_token === "string" ? body.session_token.trim() : "";
+      let valid = false;
+      try { valid = await validateSessionToken(token, url.hostname, clientIp, env.TURNSTILE_SECRET_KEY); } catch (_) {}
+      if (!valid) return withSecurityHeaders(jsonError("Your secure session expired or is invalid. Complete the security check again.", 401));
     }
 
     let failureDetail = "";
