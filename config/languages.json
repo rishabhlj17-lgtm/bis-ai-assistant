@@ -1,0 +1,20 @@
+{
+  "default": "en",
+  "supported": [
+    { "code": "en", "name": "English", "nativeName": "English", "initialRelease": true },
+    { "code": "hi", "name": "Hindi", "nativeName": "हिन्दी", "initialRelease": true },
+    { "code": "gu", "name": "Gujarati", "nativeName": "ગુજરાતી", "initialRelease": true },
+    { "code": "ta", "name": "Tamil", "nativeName": "தமிழ்", "initialRelease": true },
+    { "code": "te", "name": "Telugu", "nativeName": "తెలుగు", "initialRelease": true },
+    { "code": "kn", "name": "Kannada", "nativeName": "ಕನ್ನಡ", "initialRelease": true },
+    { "code": "ml", "name": "Malayalam", "nativeName": "മലയാളം", "initialRelease": true }
+  ],
+  "translationPolicy": {
+    "machineDraftLabel": "Unreviewed translation",
+    "requireHumanReviewForTechnicalOrLegalContent": true,
+    "preserveStandardIdentifiers": true,
+    "preserveClauseReferences": true,
+    "preserveUnitsAndNumbers": true,
+    "fallbackLanguage": "en"
+  }
+}
